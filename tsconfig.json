@@ -1,0 +1,57 @@
+{
+  "compilerOptions": {
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/interfaces"
+    ],
+    "target": "ES2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "outDir": "dist",
+    "baseUrl": "./",
+    "paths": {
+      "__tests__": [
+        "./__tests__"
+      ],
+      "@src/*": [
+        "./src/*"
+      ],
+      "@routes/*": [
+        "./src/routes/*"
+      ],
+      "@config": [
+        "./src/config"
+      ],
+      "@utils": [
+        "./src/utils"
+      ],
+      "@utils/*": [
+        "./src/utils/*"
+      ],
+      "@helpers/*": [
+        "./src/helpers/*"
+      ],
+      "@lib/*": [
+        "./src/lib/*"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/lib/google/**"
+  ]
+}
