@@ -5,9 +5,9 @@ import ValidatePayload from "@helpers/payload-validator.helper"
 
 export const getTransactions = createController(async (req, res) => {
 
-	const {payload:filter} = ValidatePayload({
+	const { payload: filter } = ValidatePayload({
 		payload: req?.query,
-		schema: (z)=>({
+		schema: (z) => ({
 			filter: z.object({
 				limit: z.number().optional(),
 				page: z.number().optional(),
@@ -15,11 +15,11 @@ export const getTransactions = createController(async (req, res) => {
 				sortOrder: z.enum(["asc", "desc"]).optional(),
 				startDate: z.string().optional(),
 				endDate: z.string().optional(),
-			}).optional()
-		})
+			}).optional(),
+		}),
 	})
 
-	const { data, meta } = await transactionService.getTransactions(req.user.id,filter,req.pagination)
+	const { data, meta } = await transactionService.getTransactions(req.user.id, filter, req.pagination)
 
 	return ApiResponse.success("transactions fetched successfully", data, 200, meta)
 })
@@ -27,7 +27,8 @@ export const getTransactions = createController(async (req, res) => {
 export const deposit = createController(async (req, res) => {
 	const { payload } = ValidatePayload({
 		schema: z => ({
-			amount: z.number().positive().int().min(100).max(1000000),
+			amount: z.coerce.number().positive().int().min(100).max(1000000),
+			narration: z.string().optional().default("Deposit"),
 		}),
 		payload: req?.body,
 	})
@@ -40,7 +41,7 @@ export const deposit = createController(async (req, res) => {
 export const withdraw = createController(async (req, res) => {
 	const { payload } = ValidatePayload({
 		schema: z => ({
-			amount: z.number().positive().int().min(100).max(1000000),
+			amount: z.coerce.number().positive().int().min(100).max(1000000),
 		}),
 		payload: req?.body,
 	})
@@ -53,7 +54,7 @@ export const withdraw = createController(async (req, res) => {
 export const transfer = createController(async (req, res) => {
 	const { payload } = ValidatePayload({
 		schema: z => ({
-			amount: z.number().positive().int().min(100).max(1000000),
+			amount: z.coerce.number().positive().int().min(100).max(1000000),
 			counterpartyId: z.string(),
 			narration: z.string().optional(),
 		}),

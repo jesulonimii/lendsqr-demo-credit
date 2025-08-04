@@ -8,6 +8,7 @@ const schema = z.object({
 	JWT_SECRET: z.string().default("secret"),
 	COOKIE_AGE: z.coerce.number().default(3600000),
 	BASE_URL: z.string().default("http://localhost:3550"),
+	ADMIN_ACCOUNT_ID: z.string().default("d91481ed-168f-4c31-826b-7db21f98bab6"),
 })
 
 export const EnvConfig: EnvSchemaOpt = {
@@ -21,4 +22,6 @@ declare module "fastify" {
 	}
 }
 
-export default EnvConfig
+export const Config = schema.parse(process.env)
+
+export default Config

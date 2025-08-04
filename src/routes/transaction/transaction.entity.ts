@@ -4,22 +4,23 @@ import { db } from "@lib/knex"
 
 declare global {
 	export interface Transaction {
-		id: number;
-		transactionId: string
+		id?: number;
+		transactionReference: string
 		userId: string
+		counterpartyId?: string
 		walletId: number
 		type: "credit" | "debit"
 		amount: number
 		currency: string
 		balanceBefore: number
 		balanceAfter: number
-		status: "pending" | "successful" | "failed" | "cancelled"
+		status?: "pending" | "successful" | "failed" | "cancelled"
 		narration?: string
 		category?: string
 		relatedTransactionId?: number
 		metadata?: Record<string, any>
-		createdAt: Date
-		updatedAt: Date
+		createdAt?: Date
+		updatedAt?: Date
 	}
 }
 

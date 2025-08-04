@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify"
 import ApiResponse from "@utils/api-response.utils"
-import authRoutes from "./auth"
 
 const routes: Record<string, any> = {
-	"/auth": authRoutes,
+	"/auth": import("./auth"),
+	"/transaction": import("./transaction"),
 }
 
 export default (fastify: FastifyInstance) => {

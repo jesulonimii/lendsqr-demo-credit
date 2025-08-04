@@ -143,7 +143,7 @@ export default class BaseRepository<T = any> {
 		return new BaseRepository<T>({ db: this.db, tableName: this.tableName, transaction })
 	}
 
-	async create(data: Partial<T>): Promise<T> {
+	async create(data: T): Promise<T> {
 		try {
 			const query = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
 

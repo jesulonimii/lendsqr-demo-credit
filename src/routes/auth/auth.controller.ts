@@ -44,8 +44,10 @@ export const loginUser = createController(async (req, res) => {
 
 	res.setCookie("accessToken", token, {
 		httpOnly: true,
-		secure: "auto",
+		path: "/",
+		secure: Config.ENV === "production", // Use secure cookies in production
 		maxAge: 24 * 60 * 60, // 1 day in seconds
+
 	})
 
 	return ApiResponse.success("Login successfully", {
