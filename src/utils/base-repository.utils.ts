@@ -1,4 +1,4 @@
-import { Knex } from 'knex'
+import { Knex } from "knex"
 
 export type UpdateData<T> = Partial<T>
 export type Filter<T> = Partial<T> & Record<string, any>
@@ -9,6 +9,7 @@ export interface PopulateOption {
 	foreignKey: string
 	as: string
 	localKey?: string
+	justOne?: boolean
 }
 
 export type Populate<T> = PopulateOption[]
@@ -19,13 +20,21 @@ interface QueryBuilderStart<T> {
 
 interface QueryBuilderBuilt<T> {
 	skip(skip: number): this
+
 	limit(limit: number): this
+
 	sort(sort: "asc" | "desc", column?: string): this
+
 	populate(populate: Populate<T>): this
+
 	select(select: Select<T>): this
+
 	fromDate(date: Date, column?: string): this
+
 	toDate(date: Date, column?: string): this
+
 	then(resolve: (value: T[]) => void, reject?: (reason: any) => void): Promise<void>
+
 	catch(reject: (reason: any) => void): Promise<any>
 }
 
@@ -62,15 +71,15 @@ class QueryBuilder<T> implements QueryBuilderStart<T>, QueryBuilderBuilt<T> {
 	}
 
 	sort(sort: "asc" | "desc", column: string = "created_at"): this {
-		this.query = this.query.orderBy(column, sort)
+		this.query = this.query.orderBy(`${this.tableName}.${column}`, sort)
 		return this
 	}
 
 	populate(populate: Populate<T>): this {
 		if (populate && populate.length) {
-			populate.forEach(({ table, foreignKey, as, localKey = 'id' }) => {
+			populate.forEach(({ table, foreignKey, as, localKey = "id" }) => {
 				this.query = this.query.leftJoin(table, `${this.tableName}.${localKey}`, `${table}.${foreignKey}`)
-					.select(`${this.tableName}.*`, `${table}.*`)
+					.select(`${this.tableName}.*`)
 			})
 		}
 		return this
@@ -89,7 +98,7 @@ class QueryBuilder<T> implements QueryBuilderStart<T>, QueryBuilderBuilt<T> {
 			throw new Error("Query has not been built. Call buildQuery first.")
 		}
 		if (date) {
-			this.query = this.query.where(column, '>=', date)
+			this.query = this.query.where(`${this.tableName}.${column}`, ">=", date)
 		}
 		return this
 	}
@@ -99,7 +108,7 @@ class QueryBuilder<T> implements QueryBuilderStart<T>, QueryBuilderBuilt<T> {
 			throw new Error("Query has not been built. Call buildQuery first.")
 		}
 		if (date) {
-			this.query = this.query.where(column, '<=', date)
+			this.query = this.query.where(`${this.tableName}.${column}`, "<=", date)
 		}
 		return this
 	}
@@ -139,12 +148,16 @@ export default class BaseRepository<T = any> {
 			const query = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
 
 			if (this.isPostgres()) {
-				const [result] = await query.insert(data).returning('*')
+				const [result] = await query.insert(data).returning("*")
 				return result
 			} else {
-				// MySQL: insert and then fetch the created record
-				const [insertId] = await query.insert(data)
-				return await this.getById(insertId)
+				if (!data?.["id"]) {
+					data["id"] = crypto.randomUUID()
+				}
+
+				await query.insert(data)
+
+				return await this.getById(data["id"])
 			}
 		} catch (error) {
 			throw new Error(`Error creating ${this.tableName}: ${error.message}`)
@@ -154,13 +167,7 @@ export default class BaseRepository<T = any> {
 	async getById(id: string | number, populate?: Populate<T>, select?: Select<T>): Promise<T | null> {
 		try {
 			let query = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
-			query = query.where('id', id)
-
-			if (populate && populate.length) {
-				populate.forEach(({ table, foreignKey, as, localKey = 'id' }) => {
-					query = query.leftJoin(table, `${this.tableName}.${localKey}`, `${table}.${foreignKey}`)
-				})
-			}
+			query = query.where("id", id)
 
 			if (select && select.length) {
 				const columns = select.map(col => `${this.tableName}.${String(col)}`)
@@ -169,7 +176,26 @@ export default class BaseRepository<T = any> {
 				query = query.select(`${this.tableName}.*`)
 			}
 
-			return await query.first()
+			const result = await query.first()
+			if (!result) return null
+			if (populate && populate.length) {
+				await Promise.all(
+					populate.map(async ({ table, foreignKey, as, localKey = "id", justOne }) => {
+						try {
+							const populateQuery = this.transaction ? this.transaction(table) : this.db(table)
+							const populatedData = await populateQuery
+								.where(`${table}.${foreignKey}`, result[localKey])
+								.select(`${table}.*`)
+
+							result[as] = justOne ? populatedData[0] || null : populatedData || []
+						} catch (error) {
+							throw new Error(`Error populating ${as} from ${table}: ${error.message}`)
+						}
+					}),
+				)
+			}
+
+			return result
 		} catch (error) {
 			throw new Error(`Error getting ${this.tableName} by ID: ${error.message}`)
 		}
@@ -183,12 +209,6 @@ export default class BaseRepository<T = any> {
 				query = query.where(filter)
 			}
 
-			if (populate && populate.length) {
-				populate.forEach(({ table, foreignKey, as, localKey = 'id' }) => {
-					query = query.leftJoin(table, `${this.tableName}.${localKey}`, `${table}.${foreignKey}`)
-				})
-			}
-
 			if (select && select.length) {
 				const columns = select.map(col => `${this.tableName}.${String(col)}`)
 				query = query.select(columns)
@@ -196,7 +216,26 @@ export default class BaseRepository<T = any> {
 				query = query.select(`${this.tableName}.*`)
 			}
 
-			return await query.first()
+			const result = await query.first()
+			if (!result) return null
+			if (populate && populate.length) {
+				await Promise.all(
+					populate.map(async ({ table, foreignKey, as, localKey = "id", justOne }) => {
+						try {
+							const populateQuery = this.transaction ? this.transaction(table) : this.db(table)
+							const populatedData = await populateQuery
+								.where(`${table}.${foreignKey}`, result[localKey])
+								.select(`${table}.*`)
+
+							result[as] = justOne ? populatedData[0] || null : populatedData || []
+						} catch (error) {
+							throw new Error(`Error populating ${as} from ${table}: ${error.message}`)
+						}
+					}),
+				)
+			}
+
+			return await this.populateRelations(result, populate) as any
 		} catch (error) {
 			throw new Error(`Error getting ${this.tableName} by query: ${error.message}`)
 		}
@@ -210,13 +249,13 @@ export default class BaseRepository<T = any> {
 			skip = 0,
 			limit = 200,
 			sort = "desc",
-			sortColumn = "created_at"
+			sortColumn = "created_at",
 		}: {
 			skip?: number
 			limit?: number
 			sort?: "asc" | "desc"
 			sortColumn?: string
-		} = {}
+		} = {},
 	): Promise<T[]> {
 		try {
 			let query = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
@@ -225,10 +264,10 @@ export default class BaseRepository<T = any> {
 				query = query.where(filter)
 			}
 
-			query = query.offset(skip).limit(limit).orderBy(sortColumn, sort)
+			query = query.offset(skip).limit(limit).orderBy(`${this.tableName}.${sortColumn}`, sort)
 
 			if (populate && populate.length) {
-				populate.forEach(({ table, foreignKey, as, localKey = 'id' }) => {
+				populate.forEach(({ table, foreignKey, as, localKey = "id" }) => {
 					query = query.leftJoin(table, `${this.tableName}.${localKey}`, `${table}.${foreignKey}`)
 				})
 			}
@@ -240,7 +279,9 @@ export default class BaseRepository<T = any> {
 				query = query.select(`${this.tableName}.*`)
 			}
 
-			return await query
+			const baseResults: T[] = await query
+			const result = await this.populateRelations(baseResults, populate)
+			return result as any
 		} catch (error) {
 			throw new Error(`Error getting ${this.tableName} by query: ${error.message}`)
 		}
@@ -251,11 +292,10 @@ export default class BaseRepository<T = any> {
 			const query = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
 
 			if (this.isPostgres()) {
-				const [result] = await query.where('id', id).update(data).returning('*')
+				const [result] = await query.where("id", id).update(data).returning("*")
 				return result || null
 			} else {
-				// MySQL: update and then fetch the updated record
-				const affectedRows = await query.where('id', id).update(data)
+				const affectedRows = await query.where("id", id).update(data)
 				return affectedRows > 0 ? await this.getById(id) : null
 			}
 		} catch (error) {
@@ -272,10 +312,9 @@ export default class BaseRepository<T = any> {
 			}
 
 			if (this.isPostgres()) {
-				const [result] = await query.update(data).returning('*')
+				const [result] = await query.update(data).returning("*")
 				return result || null
 			} else {
-				// MySQL: get the record first, then update
 				const existingRecord = await this.getOne(filter)
 				if (!existingRecord) return null
 
@@ -292,14 +331,13 @@ export default class BaseRepository<T = any> {
 			const query = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
 
 			if (this.isPostgres()) {
-				const [result] = await query.where('id', id).del().returning('*')
+				const [result] = await query.where("id", id).del().returning("*")
 				return result || null
 			} else {
-				// MySQL: get the record first, then delete
 				const existingRecord = await this.getById(id)
 				if (!existingRecord) return null
 
-				const affectedRows = await query.where('id', id).del()
+				const affectedRows = await query.where("id", id).del()
 				return affectedRows > 0 ? existingRecord : null
 			}
 		} catch (error) {
@@ -316,10 +354,9 @@ export default class BaseRepository<T = any> {
 			}
 
 			if (this.isPostgres()) {
-				const [result] = await query.del().returning('*')
+				const [result] = await query.del().returning("*")
 				return result || null
 			} else {
-				// MySQL: get the record first, then delete
 				const existingRecord = await this.getOne(filter)
 				if (!existingRecord) return null
 
@@ -339,7 +376,7 @@ export default class BaseRepository<T = any> {
 				query = query.where(filter)
 			}
 
-			const [{ count }] = await query.count('* as count')
+			const [{ count }] = await query.count("* as count")
 			return parseInt(count as string, 10)
 		} catch (error) {
 			throw new Error(`Error counting ${this.tableName}: ${error.message}`)
@@ -355,37 +392,26 @@ export default class BaseRepository<T = any> {
 		}
 	}
 
-	async aggregate(pipeline: any[]): Promise<any[]> {
-		// Note: Knex doesn't have MongoDB-style aggregation pipelines
-		// This would need to be implemented with raw SQL or specific Knex queries
-		// depending on your aggregation needs
-		throw new Error("Aggregate method needs to be implemented based on specific SQL aggregation requirements")
-	}
-
 	async bulkCreate(data: Partial<T>[]): Promise<T[]> {
 		try {
 			const query = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
 
 			if (this.isPostgres()) {
-				return await query.insert(data).returning('*')
+				return await query.insert(data).returning("*")
 			} else {
-				// MySQL: insert and then fetch the created records
 				const result = await query.insert(data)
 				const insertId = result[0]
 				const insertedCount = data.length
 
-				// For MySQL, we need to fetch the inserted records by their IDs
-				// This assumes auto-incrementing IDs
 				if (insertedCount === 1) {
 					const record = await this.getById(insertId)
 					return record ? [record] : []
 				} else {
-					// For bulk inserts, fetch the range of IDs
 					const startId = insertId
 					const endId = insertId + insertedCount - 1
 
 					let fetchQuery = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
-					return await fetchQuery.whereBetween('id', [startId, endId]).orderBy('id')
+					return await fetchQuery.whereBetween("id", [startId, endId]).orderBy("id")
 				}
 			}
 		} catch (error) {
@@ -426,18 +452,15 @@ export default class BaseRepository<T = any> {
 			const query = this.transaction ? this.transaction(this.tableName) : this.db(this.tableName)
 
 			if (this.isPostgres()) {
-				// Use onConflict for upsert functionality
 				return await query.insert({ ...filter, ...data })
 					.onConflict(Object.keys(filter))
 					.merge(data)
-					.returning('*')
+					.returning("*")
 			} else {
-				// MySQL: Use INSERT ... ON DUPLICATE KEY UPDATE
 				const mergedData = { ...filter, ...data }
 
 				//await query.insert(mergedData).onDuplicateUpdate(data)
 
-				// Fetch the affected records
 				return await this.get(filter)
 			}
 		} catch (error) {
@@ -445,13 +468,44 @@ export default class BaseRepository<T = any> {
 		}
 	}
 
-	private isPostgres(): boolean {
-		return this.db.client.config.client === 'postgresql' || this.db.client.config.client === 'pg'
-	}
-
 	buildQuery(filter: Filter<T>): QueryBuilderBuilt<T> {
 		return this.queryBuilder.buildQuery(filter)
 	}
 
+
+	private isPostgres(): boolean {
+		return this.db.client.config.client === "postgresql" || this.db.client.config.client === "pg"
+	}
+
+	private async populateRelations(
+		records: T[] | T | null,
+		populate?: Populate<T>,
+	) {
+		if (!records || !populate?.length) return records
+
+		const rows = Array.isArray(records) ? records : [records]
+
+		for (const { table, foreignKey, as, localKey = "id", justOne } of populate) {
+			const ids = rows.map(r => r[localKey]).filter(Boolean)
+
+			const relatedQuery = this.transaction ? this.transaction(table) : this.db(table)
+			const relatedRows = await relatedQuery.whereIn(foreignKey, ids).select("*")
+
+			const grouped = relatedRows.reduce((acc, item) => {
+				const key = item[foreignKey]
+				if (!acc[key]) acc[key] = []
+				acc[key].push(item)
+				return acc
+			}, {} as Record<string, any[]>)
+
+			for (const r of rows) {
+				const key = r[localKey]
+				const related = grouped[key] || []
+				r[as] = justOne ? related[0] || null : related
+			}
+		}
+
+		return Array.isArray(records) ? rows : rows[0]
+	}
 
 }

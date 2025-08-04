@@ -29,6 +29,7 @@ export async function createUser(userData: Partial<User>): Promise<any> {
 		foreignKey: "userId",
 		table: "wallets",
 		as: "wallet",
+		justOne: true,
 	}])
 }
 
@@ -36,14 +37,19 @@ export async function loginUser({ email, password }: { email: string, password: 
 	const user = await userRepo.getOne({ email })
 	if (!user) throw ServiceError.forbidden("Invalid login credentials.")
 
-	const isPasswordValid = await PasswordHelper.compare(password, user.password)
+	const isPasswordValid = await PasswordHelper.compare({
+		hash: user.password,
+		password,
+	})
 
 	if (!isPasswordValid) throw ServiceError.forbidden("Invalid login credentials.")
 
+	console.log(user)
 	return await userRepo.getById(user.id, [{
 		foreignKey: "userId",
 		table: "wallets",
 		as: "wallet",
+		justOne: true,
 	}])
 
 }

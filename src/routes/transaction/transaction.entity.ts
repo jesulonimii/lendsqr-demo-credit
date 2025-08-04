@@ -3,14 +3,23 @@ import { Knex } from "knex"
 import { db } from "@lib/knex"
 
 declare global {
-	interface Transaction {
-		id: string
+	export interface Transaction {
+		id: number;
+		transactionId: string
+		userId: string
+		walletId: number
+		type: "credit" | "debit"
 		amount: number
 		currency: string
-		userId: string
-		type: "credit" | "debit"
-		status: "pending" | "successful" | "failed"
-		narration: string
+		balanceBefore: number
+		balanceAfter: number
+		status: "pending" | "successful" | "failed" | "cancelled"
+		narration?: string
+		category?: string
+		relatedTransactionId?: number
+		metadata?: Record<string, any>
+		createdAt: Date
+		updatedAt: Date
 	}
 }
 

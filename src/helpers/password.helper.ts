@@ -9,7 +9,7 @@ const encrypt = async (password: string, options?: argon2.Options) => {
 }
 
 
-const compare = async (hash: string, password: string, options?: argon2.Options) => {
+const compare = async ({ hash, password }: { hash: string, password: string }, options?: argon2.Options) => {
 	return await argon2.verify(hash, password)
 }
 

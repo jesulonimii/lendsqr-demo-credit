@@ -5,7 +5,6 @@ import { db } from "@lib/knex"
 declare global {
 	interface Wallet {
 		id: number
-		uid: string
 		userId: string
 		email: string
 		balance: number
