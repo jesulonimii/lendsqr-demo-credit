@@ -9,6 +9,7 @@ const schema = z.object({
 	COOKIE_AGE: z.coerce.number().default(3600000),
 	BASE_URL: z.string().default("http://localhost:3550"),
 	ADMIN_ACCOUNT_ID: z.string().default("d91481ed-168f-4c31-826b-7db21f98bab6"),
+	LENDSQR_API_KEY: z.string(),
 })
 
 export const EnvConfig: EnvSchemaOpt = {

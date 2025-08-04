@@ -4,8 +4,7 @@ import { db } from "@lib/knex"
 
 declare global {
 	interface User {
-		id: string
-		uid: string
+		id?: string
 		firstName: string
 		lastName: string
 		email: string
