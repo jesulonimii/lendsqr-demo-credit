@@ -249,7 +249,7 @@ export default class BaseRepository<T = any> {
 			skip = 0,
 			limit = 200,
 			sort = "desc",
-			sortColumn = "created_at",
+			sortColumn = "createdAt",
 		}: {
 			skip?: number
 			limit?: number

@@ -10,15 +10,9 @@ import Generator from "@helpers/generator.helper"
 export const getTransactions = async (userId: string, filter: Record<string, any>, pagination: IPagination) => {
 	const user = await userRepo.getById(userId)
 	if (!user) throw ServiceError.forbidden("User not found.")
-
 	const count = await transactionRepo.count(filter)
 
-	const data = await transactionRepo.buildQuery(filter)
-		.limit(pagination?.limit)
-		.skip(pagination?.skip)
-		.fromDate(pagination?.dates?.from, "createdAt")
-		.toDate(pagination?.dates?.to, "createdAt")
-		.sort(pagination?.sort)
+	const data = await transactionRepo.get(filter)
 
 	return {
 		data,

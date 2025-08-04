@@ -4,13 +4,13 @@ import { db } from "@lib/knex"
 
 declare global {
 	interface Wallet {
-		id: number
+		id?: number
 		userId: string
 		email: string
 		balance: number
-		currency: string
-		createdAt: Date
-		updatedAt: Date
+		currency?: string
+		createdAt?: Date
+		updatedAt?: Date
 	}
 }
 
