@@ -1,11 +1,6 @@
 import argon2 from "argon2"
+import { nanoid } from "nanoid"
 
-/**
- * Encrypts a password using Argon2.
- * @param password - The password to hash.
- * @param options - Optional Argon2 hashing options.
- * @returns The hashed password.
- */
 const encrypt = async (password: string, options?: argon2.Options) => {
 	return await argon2.hash(password, {
 		type: argon2.argon2id, // Use Argon2id for better security
@@ -13,19 +8,20 @@ const encrypt = async (password: string, options?: argon2.Options) => {
 	})
 }
 
-/**
- * Compares a password with a given hash.
- * @param hash - The hash to compare against.
- * @param password - The password to verify.
- * @returns True if the password matches the hash, otherwise false.
- */
-const compare = async (hash: string, password: string) => {
+
+const compare = async (hash: string, password: string, options?: argon2.Options) => {
 	return await argon2.verify(hash, password)
+}
+
+
+const generateSalt = async (length: number = 16) => {
+	return nanoid(length)
 }
 
 const PasswordHelper = {
 	encrypt,
 	compare,
+	generateSalt,
 }
 
 export default PasswordHelper

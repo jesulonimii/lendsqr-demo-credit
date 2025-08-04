@@ -12,6 +12,11 @@ declare global {
 		page: number
 		limit: number
 		skip: number
+		sort?: "asc" | "desc"
+		dates?: {
+			from?: Date
+			to?: Date
+		}
 	}
 
 

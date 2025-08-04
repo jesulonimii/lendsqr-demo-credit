@@ -3,21 +3,22 @@ import { Knex } from "knex"
 import { db } from "@lib/knex"
 
 declare global {
-	interface User {
+	interface Wallet {
 		id: number
-		firstName: string
-		lastName: string
+		uid: string
+		userId: string
 		email: string
-		password: string
+		balance: number
+		currency: string
 		createdAt: Date
 		updatedAt: Date
 	}
 }
 
-class UserRepository extends BaseRepository<User> {
+class WalletRepository extends BaseRepository<Wallet> {
 	constructor(db: Knex) {
-		super({ db, tableName: "users" })
+		super({ db, tableName: "Wallets" })
 	}
 }
 
-export const userRepository = new UserRepository(db)
+export const walletRepo = new WalletRepository(db)
