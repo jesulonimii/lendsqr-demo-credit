@@ -6,7 +6,7 @@ declare global {
 	interface Wallet {
 		id?: number
 		userId: string
-		email: string
+		email?: string
 		balance: number
 		currency?: string
 		createdAt?: Date

@@ -6,7 +6,7 @@ export async function up(knex) {
 
 		table.uuid("userId").unique().references("id").inTable("users").onDelete("CASCADE")
 
-		table.string("email").notNullable()
+		table.string("email").nullable()
 		table.string("currency").nullable()
 		table.integer("balance").nullable().defaultTo(0)
 		table.timestamp("createdAt", { useTz: true }).defaultTo(knex.fn.now())
