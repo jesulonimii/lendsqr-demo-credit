@@ -16,7 +16,7 @@ declare global {
 
 class WalletRepository extends BaseRepository<Wallet> {
 	constructor(db: Knex) {
-		super({ db, tableName: "Wallets" })
+		super({ db, tableName: "wallets" })
 	}
 }
 
