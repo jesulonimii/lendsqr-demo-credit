@@ -5,6 +5,7 @@ import { generatePaginationMeta } from "@src/plugins/paginate.plugin"
 import { walletRepo } from "@routes/wallet/wallet.entity"
 import { useDatabaseTransaction } from "@lib/knex/dbTransaction.utils"
 import Generator from "@helpers/generator.helper"
+import Config from "@config"
 
 
 export const getTransactions = async (userId: string, filter: Record<string, any>, pagination: IPagination) => {
@@ -41,6 +42,7 @@ export const deposit = async (userId: string, { amount }: { amount: number }) =>
 		const reference = Generator.randomString(16, { numeric: true })
 		return await transactionRepo.withSession(session).create({
 			userId,
+			counterpartyId: Config.ADMIN_ACCOUNT_ID,
 			amount,
 			type: "credit",
 			currency: wallet?.currency,

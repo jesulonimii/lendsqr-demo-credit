@@ -10,6 +10,12 @@ import Generator from "@helpers/generator.helper"
 vi.mock("@lib/knex", () => (
 	{ db: {} }
 ))
+vi.mock("@config", () => ({
+	default: {
+		ENV: "development",
+		LENDSQR_API_KEY: "123",
+	}
+}))
 vi.mock("@routes/user/user.entity")
 vi.mock("@routes/transaction/transaction.entity")
 vi.mock("@routes/wallet/wallet.entity")
